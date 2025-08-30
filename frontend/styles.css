@@ -1,0 +1,404 @@
+/* ShopEAT Frontend Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    color: #333;
+}
+
+.app-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    min-height: 100vh;
+}
+
+/* Header Styles */
+.app-header {
+    text-align: center;
+    margin-bottom: 40px;
+    color: white;
+}
+
+.app-header h1 {
+    font-size: 3rem;
+    font-weight: 700;
+    margin-bottom: 10px;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.subtitle {
+    font-size: 1.2rem;
+    font-weight: 300;
+    margin-bottom: 20px;
+    opacity: 0.9;
+}
+
+.connection-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255,255,255,0.2);
+    padding: 8px 16px;
+    border-radius: 20px;
+    backdrop-filter: blur(10px);
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ffd700;
+    animation: pulse 2s infinite;
+}
+
+.status-dot.connected {
+    background: #4ade80;
+}
+
+.status-dot.disconnected {
+    background: #ef4444;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* Main Content */
+.main-content {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 30px;
+    margin-bottom: 30px;
+}
+
+@media (min-width: 768px) {
+    .main-content {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+/* Voice Section */
+.voice-section {
+    background: white;
+    border-radius: 20px;
+    padding: 30px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    text-align: center;
+}
+
+.voice-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+.voice-btn {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    border: none;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+}
+
+.voice-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 35px rgba(102, 126, 234, 0.6);
+}
+
+.voice-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.voice-btn.recording {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    animation: recording-pulse 1s infinite;
+}
+
+@keyframes recording-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+.mic-icon {
+    font-size: 2rem;
+}
+
+.btn-text {
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.voice-feedback {
+    text-align: center;
+}
+
+.waveform {
+    height: 40px;
+    background: linear-gradient(90deg, #e5e7eb 0%, #d1d5db 100%);
+    border-radius: 10px;
+    margin-bottom: 10px;
+    position: relative;
+    overflow: hidden;
+}
+
+.waveform::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: #667eea;
+    transform: translateY(-50%);
+}
+
+.feedback-text {
+    color: #6b7280;
+    font-size: 0.9rem;
+}
+
+/* Shopping Section */
+.shopping-section {
+    background: white;
+    border-radius: 20px;
+    padding: 30px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.section-header h2 {
+    color: #1f2937;
+    font-weight: 600;
+}
+
+.clear-btn {
+    background: #ef4444;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background 0.3s ease;
+}
+
+.clear-btn:hover {
+    background: #dc2626;
+}
+
+.shopping-list {
+    min-height: 200px;
+}
+
+.empty-state {
+    text-align: center;
+    color: #9ca3af;
+    padding: 40px 20px;
+}
+
+.empty-state p {
+    margin-bottom: 8px;
+}
+
+.shopping-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    background: #f9fafb;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    border-left: 4px solid #667eea;
+}
+
+.item-info h4 {
+    color: #1f2937;
+    margin-bottom: 4px;
+}
+
+.item-meta {
+    color: #6b7280;
+    font-size: 0.9rem;
+}
+
+.item-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.item-actions button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    transition: background 0.3s ease;
+}
+
+.item-actions button:hover {
+    background: #e5e7eb;
+}
+
+/* Assistant Section */
+.assistant-section {
+    background: white;
+    border-radius: 20px;
+    padding: 30px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+.assistant-section h2 {
+    color: #1f2937;
+    font-weight: 600;
+    margin-bottom: 20px;
+}
+
+.chat-container {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.chat-message {
+    margin-bottom: 15px;
+    padding: 15px;
+    border-radius: 15px;
+    max-width: 80%;
+}
+
+.chat-message.user {
+    background: #667eea;
+    color: white;
+    margin-left: auto;
+}
+
+.chat-message.assistant {
+    background: #f3f4f6;
+    color: #1f2937;
+}
+
+.message-content {
+    line-height: 1.5;
+}
+
+/* Quick Actions */
+.quick-actions {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.action-btn {
+    background: rgba(255,255,255,0.2);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 25px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+}
+
+.action-btn:hover {
+    background: rgba(255,255,255,0.3);
+    transform: translateY(-1px);
+}
+
+/* Loading Overlay */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.8);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    color: white;
+    z-index: 1000;
+}
+
+.loading-overlay.show {
+    display: flex;
+}
+
+.loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid rgba(255,255,255,0.3);
+    border-top: 4px solid white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 20px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .app-header h1 {
+        font-size: 2rem;
+    }
+    
+    .main-content {
+        grid-template-columns: 1fr;
+    }
+    
+    .voice-btn {
+        width: 100px;
+        height: 100px;
+    }
+    
+    .app-container {
+        padding: 15px;
+    }
+}
+
+/* Utility Classes */
+.hidden {
+    display: none;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.mt-20 {
+    margin-top: 20px;
+}
+
+.mb-20 {
+    margin-bottom: 20px;
+}

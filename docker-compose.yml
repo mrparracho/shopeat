@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - ENV=development
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - BACKEND_HOST=0.0.0.0
+      - BACKEND_PORT=8000
+    volumes:
+      - ./backend:/app
+      - /app/venv
+    networks:
+      - shopeat-network
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    networks:
+      - shopeat-network
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+networks:
+  shopeat-network:
+    driver: bridge
+
+volumes:
+  backend-venv:
+  frontend-node-modules:

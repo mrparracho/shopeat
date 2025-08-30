@@ -1,0 +1,135 @@
+SHOPEAT SYSTEM ARCHITECTURE DIAGRAM
+=====================================
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                                ShopEAT System                              │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────────────┐ │
+│  │   Frontend      │    │    Backend      │    │      OpenAI Services    │ │
+│  │   (JavaScript)  │◄──►│   (Python)      │◄──►│                         │ │
+│  │                 │    │                 │    │ • GPT Models            │ │
+│  │ • Voice UI      │    │ • FastAPI       │    │ • Whisper API           │ │
+│  │ • Real-time     │    │ • WebSocket     │    │ • Function Calling      │ │
+│  │ • Shopping      │    │ • Voice Proc    │    │ • Agent SDK             │ │
+│  │ • WebRTC        │    │ • State Mgmt    │    │                         │ │
+│  └─────────────────┘    └─────────────────┘    └─────────────────────────┘ │
+│           │                       │                        │               │
+│           │                       │                        │               │
+│  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────────────┐ │
+│  │   Browser       │    │   HTTP/WS       │    │      External APIs      │ │
+│  │   APIs          │    │   Server        │    │                         │ │
+│  │                 │    │                 │    │ • OpenAI API            │ │
+│  │ • MediaDevices  │    │ • CORS          │    │ • Payment Gateway       │ │
+│  │ • WebSocket     │    │ • Auth          │    │ • Product Database      │ │
+│  │ • LocalStorage  │    │ • Rate Limiting │    │                         │ │
+│  └─────────────────┘    └─────────────────┘    └─────────────────────────┘ │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+DATA FLOW ARCHITECTURE
+======================
+
+User Voice Input
+       ↓
+   Frontend (WebRTC)
+       ↓
+   Audio Recording
+       ↓
+   Base64 Encoding
+       ↓
+   WebSocket Transmission
+       ↓
+   Backend Processing
+       ↓
+   OpenAI API Call
+       ↓
+   AI Response Generation
+       ↓
+   Shopping Action Execution
+       ↓
+   State Update
+       ↓
+   Real-time UI Update
+
+COMPONENT INTERACTIONS
+======================
+
+1. FRONTEND COMPONENTS
+   ├── Voice Recording Interface
+   ├── Shopping List Display
+   ├── AI Chat Interface
+   ├── Connection Status
+   └── Quick Action Buttons
+
+2. BACKEND SERVICES
+   ├── WebSocket Connection Manager
+   ├── Voice Processing Pipeline
+   ├── OpenAI Integration Service
+   ├── Shopping List Manager
+   └── API Endpoint Handler
+
+3. COMMUNICATION PROTOCOLS
+   ├── HTTP REST API (shopping list operations)
+   ├── WebSocket (real-time voice communication)
+   ├── Base64 Audio Encoding
+   └── JSON Message Format
+
+4. EXTERNAL INTEGRATIONS
+   ├── OpenAI GPT Models
+   ├── OpenAI Whisper API
+   ├── OpenAI Function Calling
+   └── OpenAI Agent SDK
+
+TECHNOLOGY STACK
+================
+
+Frontend:
+- HTML5, CSS3, Vanilla JavaScript
+- WebRTC for voice recording
+- WebSocket for real-time communication
+- Responsive design with CSS Grid/Flexbox
+
+Backend:
+- Python 3.9+
+- FastAPI framework
+- WebSocket support
+- OpenAI SDK integration
+- Pydantic data validation
+
+Infrastructure:
+- Docker containerization
+- Docker Compose for development
+- HTTP server for frontend
+- CORS-enabled API endpoints
+
+SECURITY & SCALABILITY
+======================
+
+Security Features:
+- Environment variable protection
+- API key management
+- Input validation
+- CORS policy enforcement
+- WebSocket authentication
+
+Scalability Considerations:
+- In-memory state (PoC limitation)
+- Single WebSocket per client
+- Async/await for non-blocking operations
+- Modular architecture for future expansion
+
+DEPLOYMENT OPTIONS
+==================
+
+Development:
+- Local Python virtual environment
+- Node.js http-server
+- Docker Compose setup
+
+Production:
+- Container orchestration (Kubernetes)
+- Load balancing
+- Database integration
+- Monitoring and logging
+- HTTPS enforcement

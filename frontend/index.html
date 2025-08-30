@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShopEAT 🛒🎤 - Voice Shopping Assistant</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <h1>ShopEAT 🛒🎤</h1>
+            <p class="subtitle">Your AI-powered voice shopping assistant</p>
+            <div class="connection-status" id="connectionStatus">
+                <span class="status-dot"></span>
+                <span class="status-text">Connecting...</span>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Voice Control Section -->
+            <section class="voice-section">
+                <div class="voice-controls">
+                    <button class="voice-btn" id="voiceBtn">
+                        <span class="mic-icon">🎤</span>
+                        <span class="btn-text">Hold to Speak</span>
+                    </button>
+                    <div class="voice-feedback" id="voiceFeedback">
+                        <div class="waveform" id="waveform"></div>
+                        <p class="feedback-text">Ready to help you shop!</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Shopping List Section -->
+            <section class="shopping-section">
+                <div class="section-header">
+                    <h2>Shopping List</h2>
+                    <button class="clear-btn" id="clearListBtn">Clear All</button>
+                </div>
+                <div class="shopping-list" id="shoppingList">
+                    <div class="empty-state">
+                        <p>🎯 Start by saying what you need to buy!</p>
+                        <p>Try: "I need milk and bread"</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- AI Assistant Section -->
+            <section class="assistant-section">
+                <h2>AI Assistant</h2>
+                <div class="chat-container" id="chatContainer">
+                    <div class="chat-message assistant">
+                        <div class="message-content">
+                            <strong>AI Assistant:</strong> Hi! I'm here to help you with your shopping. 
+                            Just hold the microphone button and tell me what you need!
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Quick Actions -->
+        <div class="quick-actions">
+            <button class="action-btn" id="refreshBtn">🔄 Refresh</button>
+            <button class="action-btn" id="testBtn">🧪 Test Connection</button>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+        <p>Processing...</p>
+    </div>
+
+    <!-- Scripts -->
+    <script src="app.js"></script>
+</body>
+</html>
