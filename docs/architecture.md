@@ -66,6 +66,7 @@ ShopEAT is a real-time voice shopping assistant that combines modern web technol
 - WebSocket for real-time duplex communication
 - OpenAI SDK for AI integration
 - Pydantic for data validation
+- **UV package manager** for fast dependency management
 
 **Key Features:**
 - RESTful API endpoints
@@ -80,7 +81,37 @@ ShopEAT is a real-time voice shopping assistant that combines modern web technol
 - Middleware for CORS and authentication
 - Dependency injection for services
 
-### 3. Communication Layer
+### 3. Package Management with UV
+
+**UV Integration:**
+- **Lightning-fast dependency resolution** (10-100x faster than pip)
+- **Modern pyproject.toml** configuration
+- **Built-in virtual environment management**
+- **Development tools integration** (Black, isort, flake8, mypy, pytest)
+- **Reliable dependency locking**
+
+**Development Workflow:**
+```bash
+# Setup environment
+uv venv
+uv pip install -e '.[dev]'
+
+# Development tasks
+uv run black .          # Format code
+uv run isort .          # Sort imports
+uv run flake8 .         # Lint code
+uv run mypy .           # Type checking
+uv run pytest           # Run tests
+uv run python main.py   # Start server
+```
+
+**Benefits:**
+- Eliminates dependency conflicts
+- Faster development cycles
+- Consistent development environment
+- Modern Python packaging standards
+
+### 4. Communication Layer
 
 **Protocols:**
 - HTTP/HTTPS for REST API calls
@@ -94,7 +125,7 @@ ShopEAT is a real-time voice shopping assistant that combines modern web technol
 4. AI response returned via WebSocket
 5. Frontend updates UI in real-time
 
-### 4. AI Integration
+### 5. AI Integration
 
 **OpenAI Services:**
 - GPT models for natural language understanding
@@ -185,6 +216,12 @@ User Voice Input
 - Efficient data serialization
 - Caching strategies for AI responses
 
+### UV Performance Benefits
+- **Faster dependency installation** reduces development time
+- **Eliminates dependency conflicts** improves reliability
+- **Built-in caching** speeds up repeated operations
+- **Parallel processing** for multiple package operations
+
 ## Monitoring and Observability
 
 ### Health Checks
@@ -201,11 +238,12 @@ User Voice Input
 
 ## Development Workflow
 
-### Local Development
-1. Backend: Python virtual environment with FastAPI
-2. Frontend: Node.js with http-server
-3. Environment configuration via .env files
-4. Hot reloading for both services
+### Local Development with UV
+1. **Backend**: UV virtual environment with FastAPI
+2. **Frontend**: Node.js with http-server
+3. **Environment configuration** via .env files
+4. **Hot reloading** for both services
+5. **Development tools** integrated with UV
 
 ### Docker Development
 1. Multi-service Docker Compose setup
@@ -218,6 +256,21 @@ User Voice Input
 - Integration tests for API endpoints
 - Frontend component testing
 - End-to-end voice interaction testing
+
+### UV Development Commands
+```bash
+# Quick development setup
+./dev.sh setup
+
+# Code quality checks
+./dev.sh all
+
+# Individual tasks
+./dev.sh format     # Format code
+./dev.sh lint       # Lint code
+./dev.sh test       # Run tests
+./dev.sh start      # Start backend
+```
 
 ## Deployment Considerations
 
@@ -251,4 +304,4 @@ User Voice Input
 
 ## Conclusion
 
-The ShopEAT architecture provides a solid foundation for a real-time voice shopping assistant while maintaining simplicity for the PoC phase. The modular design allows for easy expansion and the use of modern web technologies ensures a responsive and engaging user experience.
+The ShopEAT architecture provides a solid foundation for a real-time voice shopping assistant while maintaining simplicity for the PoC phase. The modular design allows for easy expansion and the use of modern web technologies ensures a responsive and engaging user experience. The integration of UV package management significantly improves development velocity and reliability, making it an excellent choice for rapid prototyping and future development.

@@ -7,6 +7,7 @@ A real-time voice shopping assistant that leverages OpenAI Agent SDK for intelli
 - **Real-time Voice Communication**: Duplex voice interaction during shopping
 - **AI-Powered Shopping Assistant**: OpenAI Agent SDK integration for smart recommendations
 - **Streamlined PoC Architecture**: Simple, focused implementation for proof of concept
+- **Fast Package Management**: UV for lightning-fast Python dependency management
 
 ## 🏗️ Architecture
 
@@ -25,7 +26,7 @@ A real-time voice shopping assistant that leverages OpenAI Agent SDK for intelli
 
 ```
 shopeat/
-├── backend/           # Python FastAPI backend
+├── backend/           # Python FastAPI backend (UV managed)
 ├── frontend/          # JavaScript frontend
 ├── shared/            # Common utilities
 ├── docs/              # Documentation & diagrams
@@ -39,17 +40,36 @@ shopeat/
 - Python 3.9+
 - Node.js 18+
 - OpenAI API key
+- UV package manager (auto-installed by setup script)
 
-### Backend Setup
+### Option 1: Automated Setup (Recommended)
+```bash
+./setup.sh
+```
+
+### Option 2: Manual Setup with UV
+
+#### Backend Setup
 ```bash
 cd backend
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-pip install -r requirements.txt
+
+# Install UV if not already installed
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Create virtual environment and install dependencies
+uv venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+uv pip install -e .
+
+# Set up environment
+cp env.example .env
+# Edit .env and add your OpenAI API key
+
+# Start the backend
 python main.py
 ```
 
-### Frontend Setup
+#### Frontend Setup
 ```bash
 cd frontend
 npm install
@@ -68,6 +88,36 @@ OPENAI_API_KEY=your_api_key_here
 - **Frontend**: Vanilla JavaScript with WebRTC for voice capabilities
 - **Communication**: WebSocket for real-time duplex communication
 - **AI Integration**: OpenAI Agent SDK for intelligent shopping assistance
+- **Package Management**: UV for fast Python dependency management
+
+## 🚀 UV Package Management
+
+ShopEAT uses **UV** - the fastest Python package manager available:
+
+### Key UV Commands
+```bash
+# Install dependencies
+uv pip install -e .
+
+# Install development dependencies
+uv pip install -e '.[dev]'
+
+# Add new package
+uv add package-name
+
+# Run commands in virtual environment
+uv run python main.py
+uv run pytest
+uv run black .
+uv run flake8 .
+```
+
+### Benefits of UV
+- ⚡ **10-100x faster** than pip
+- 🔒 **Reliable dependency resolution**
+- 🐍 **Native virtual environment management**
+- 📦 **Modern pyproject.toml support**
+- 🚀 **Built-in caching and optimization**
 
 ## 📊 PoC Goals
 
@@ -80,3 +130,9 @@ OPENAI_API_KEY=your_api_key_here
 ## 🤝 Contributing
 
 This is a proof of concept. Focus on core functionality and simplicity.
+
+## 📚 Additional Resources
+
+- [UV Documentation](https://docs.astral.sh/uv/)
+- [FastAPI Documentation](https://fastapi.tiangolo.com/)
+- [OpenAI API Documentation](https://platform.openai.com/docs)

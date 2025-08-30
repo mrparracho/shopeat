@@ -1,12 +1,13 @@
 # ShopEAT Quick Start Guide 🚀
 
-Get ShopEAT running in under 5 minutes!
+Get ShopEAT running in under 5 minutes with UV package management!
 
 ## Prerequisites
 
 - **Python 3.9+** installed
 - **Node.js 18+** installed  
 - **OpenAI API key** (get one at [platform.openai.com](https://platform.openai.com))
+- **UV package manager** (auto-installed by setup script)
 
 ## Option 1: Automated Setup (Recommended)
 
@@ -15,23 +16,27 @@ Get ShopEAT running in under 5 minutes!
 git clone <your-repo-url>
 cd shopeat
 
-# Run the setup script
+# Run the setup script (installs UV automatically)
 ./setup.sh
 ```
 
-## Option 2: Manual Setup
+## Option 2: Manual Setup with UV
 
 ### 1. Backend Setup
 
 ```bash
 cd backend
 
-# Create virtual environment
-python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+# Install UV package manager
+curl -LsSf https://astral.sh/uv/install.sh | sh
+source ~/.cargo/env  # Reload shell environment
 
-# Install dependencies
-pip install -r requirements.txt
+# Create virtual environment with UV
+uv venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+
+# Install dependencies with UV
+uv pip install -e .
 
 # Create environment file
 cp env.example .env
@@ -79,6 +84,36 @@ docker-compose up --build
 3. Say "I need to buy milk and bread"
 4. Watch the AI assistant respond!
 
+## 🚀 UV Package Management
+
+ShopEAT uses **UV** - the fastest Python package manager:
+
+### Essential UV Commands
+
+```bash
+# Install all dependencies
+uv pip install -e .
+
+# Install development dependencies
+uv pip install -e '.[dev]'
+
+# Add new package
+uv add package-name
+
+# Run commands in virtual environment
+uv run python main.py
+uv run pytest
+uv run black .
+uv run flake8 .
+uv run mypy .
+```
+
+### UV Benefits
+- ⚡ **10-100x faster** than pip
+- 🔒 **Reliable dependency resolution**
+- 🐍 **Native virtual environment management**
+- 📦 **Modern pyproject.toml support**
+
 ## Troubleshooting
 
 ### Common Issues
@@ -87,6 +122,12 @@ docker-compose up --build
 - Check if port 8000 is available
 - Verify Python 3.9+ is installed
 - Check OpenAI API key in .env file
+- Ensure UV is installed: `uv --version`
+
+**UV not found:**
+- Install UV: `curl -LsSf https://astral.sh/uv/install.sh | sh`
+- Reload shell: `source ~/.cargo/env`
+- Verify installation: `uv --version`
 
 **Frontend won't start:**
 - Check if port 3000 is available
@@ -108,6 +149,7 @@ docker-compose up --build
 - Check the browser console for error messages
 - Review the backend logs for Python errors
 - Ensure all environment variables are set correctly
+- Verify UV installation and virtual environment
 
 ## Next Steps
 
@@ -118,9 +160,28 @@ docker-compose up --build
 
 ## Development Tips
 
-- Backend auto-reloads on code changes
-- Frontend uses http-server for simplicity
+- **UV auto-reloads** on code changes
+- **Frontend uses http-server** for simplicity
 - Check `docs/architecture.md` for system details
 - Use Docker for consistent development environment
+- **UV provides fast dependency management** and development tools
 
-Happy coding! 🛒🎤
+## UV Development Workflow
+
+```bash
+# Start development
+cd backend
+uv venv
+source .venv/bin/activate
+uv pip install -e '.[dev]'
+
+# Development commands
+uv run black .          # Format code
+uv run isort .          # Sort imports
+uv run flake8 .         # Lint code
+uv run mypy .           # Type checking
+uv run pytest           # Run tests
+uv run python main.py   # Start server
+```
+
+Happy coding with UV! 🛒🎤⚡

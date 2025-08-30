@@ -2,14 +2,19 @@ FROM python:3.9-slim
 
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies and UV
 RUN apt-get update && apt-get install -y \
     gcc \
-    && rm -rf /var/lib/apt/lists/*
+    curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# Copy requirements and install Python dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Add UV to PATH
+ENV PATH="/root/.cargo/bin:$PATH"
+
+# Copy pyproject.toml and install dependencies with UV
+COPY pyproject.toml .
+RUN uv pip install -e .
 
 # Copy application code
 COPY . .

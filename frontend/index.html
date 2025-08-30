@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ShopEAT 🛒🎤 - Voice Shopping Assistant</title>
+    <title>ShopEAT 🛒�� - Continuous Voice Shopping Assistant</title>
     <link rel="stylesheet" href="styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
@@ -11,8 +11,8 @@
     <div class="app-container">
         <!-- Header -->
         <header class="app-header">
-            <h1>ShopEAT 🛒🎤</h1>
-            <p class="subtitle">Your AI-powered voice shopping assistant</p>
+            <h1>ShopEAT ����</h1>
+            <p class="subtitle">Your continuous voice shopping assistant</p>
             <div class="connection-status" id="connectionStatus">
                 <span class="status-dot"></span>
                 <span class="status-text">Connecting...</span>
@@ -26,12 +26,26 @@
                 <div class="voice-controls">
                     <button class="voice-btn" id="voiceBtn">
                         <span class="mic-icon">🎤</span>
-                        <span class="btn-text">Hold to Speak</span>
+                        <span class="btn-text">Start Listening</span>
                     </button>
-                    <div class="voice-feedback" id="voiceFeedback">
-                        <div class="waveform" id="waveform"></div>
-                        <p class="feedback-text">Ready to help you shop!</p>
+                    
+                    <div class="listening-status" id="listeningStatus">
+                        🔇 Not listening
                     </div>
+                    
+                    <div class="voice-feedback" id="voiceFeedback">
+                        <div class="interim-transcript" id="interimTranscript"></div>
+                        <p class="feedback-text">Click to start continuous listening</p>
+                    </div>
+                </div>
+                
+                <div class="voice-settings">
+                    <label for="voiceSettings">Voice Type:</label>
+                    <select id="voiceSettings">
+                        <option value="natural">Natural</option>
+                        <option value="clear">Clear</option>
+                        <option value="friendly">Friendly</option>
+                    </select>
                 </div>
             </section>
 
@@ -43,7 +57,7 @@
                 </div>
                 <div class="shopping-list" id="shoppingList">
                     <div class="empty-state">
-                        <p>🎯 Start by saying what you need to buy!</p>
+                        <p>🎯 Start by speaking naturally!</p>
                         <p>Try: "I need milk and bread"</p>
                     </div>
                 </div>
@@ -55,8 +69,8 @@
                 <div class="chat-container" id="chatContainer">
                     <div class="chat-message assistant">
                         <div class="message-content">
-                            <strong>AI Assistant:</strong> Hi! I'm here to help you with your shopping. 
-                            Just hold the microphone button and tell me what you need!
+                            <strong>AI Assistant:</strong> Hi! I'm your continuous voice shopping assistant. 
+                            Just click "Start Listening" and speak naturally. I'll listen and respond with my voice!
                         </div>
                     </div>
                 </div>

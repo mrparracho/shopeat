@@ -1,16 +1,18 @@
 /**
  * ShopEAT Frontend - Main Application
- * Real-time voice shopping assistant with WebSocket communication
+ * Continuous bidirectional speech-to-speech shopping assistant
  */
 
 class ShopEATApp {
     constructor() {
         this.ws = null;
         this.clientId = this.generateClientId();
-        this.isRecording = false;
-        this.mediaRecorder = null;
-        this.audioChunks = [];
+        this.isListening = false;
+        this.isProcessing = false;
         this.shoppingList = [];
+        this.recognition = null;
+        this.synthesis = null;
+        this.continuousMode = false;
         
         this.init();
     }
@@ -19,43 +21,184 @@ class ShopEATApp {
         this.setupEventListeners();
         this.connectWebSocket();
         this.loadShoppingList();
+        this.initSpeechRecognition();
+        this.initSpeechSynthesis();
     }
 
     generateClientId() {
         return 'client_' + Math.random().toString(36).substr(2, 9);
     }
 
-    setupEventListeners() {
-        // Voice button events
-        const voiceBtn = document.getElementById('voiceBtn');
-        voiceBtn.addEventListener('mousedown', () => this.startRecording());
-        voiceBtn.addEventListener('mouseup', () => this.stopRecording());
-        voiceBtn.addEventListener('mouseleave', () => this.stopRecording());
-        
-        // Touch events for mobile
-        voiceBtn.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            this.startRecording();
-        });
-        voiceBtn.addEventListener('touchend', (e) => {
-            e.preventDefault();
-            this.stopRecording();
-        });
+    initSpeechRecognition() {
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            this.recognition = new SpeechRecognition();
+            
+            this.recognition.continuous = true;
+            this.recognition.interimResults = true;
+            this.recognition.lang = 'en-US';
+            
+            this.recognition.onstart = () => {
+                this.isListening = true;
+                this.updateListeningStatus(true);
+            };
+            
+            this.recognition.onresult = (event) => {
+                let finalTranscript = '';
+                let interimTranscript = '';
+                
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const transcript = event.results[i][0].transcript;
+                    if (event.results[i].isFinal) {
+                        finalTranscript += transcript;
+                    } else {
+                        interimTranscript += transcript;
+                    }
+                }
+                
+                if (interimTranscript) {
+                    this.updateInterimTranscript(interimTranscript);
+                }
+                
+                if (finalTranscript) {
+                    this.processFinalTranscript(finalTranscript);
+                }
+            };
+            
+            this.recognition.onerror = (event) => {
+                this.isListening = false;
+                this.updateListeningStatus(false);
+            };
+            
+            this.recognition.onend = () => {
+                this.isListening = false;
+                this.updateListeningStatus(false);
+                
+                if (this.continuousMode && !this.isProcessing) {
+                    setTimeout(() => this.startContinuousListening(), 100);
+                }
+            };
+        }
+    }
 
-        // Clear list button
+    initSpeechSynthesis() {
+        if ('speechSynthesis' in window) {
+            this.synthesis = window.speechSynthesis;
+            
+            // Wait for voices to load
+            if (this.synthesis.getVoices().length === 0) {
+                this.synthesis.onvoiceschanged = () => {
+                    this.voicesLoaded = true;
+                };
+            } else {
+                this.voicesLoaded = true;
+            }
+        }
+    }
+
+    setupEventListeners() {
+        const toggleBtn = document.getElementById('voiceBtn');
+        toggleBtn.addEventListener('click', () => this.toggleContinuousMode());
+        
         document.getElementById('clearListBtn').addEventListener('click', () => {
             this.clearShoppingList();
         });
 
-        // Test connection button
         document.getElementById('testBtn').addEventListener('click', () => {
             this.testConnection();
         });
 
-        // Refresh button
         document.getElementById('refreshBtn').addEventListener('click', () => {
             this.loadShoppingList();
         });
+    }
+
+    toggleContinuousMode() {
+        if (this.continuousMode) {
+            this.stopContinuousListening();
+        } else {
+            this.startContinuousListening();
+        }
+    }
+
+    startContinuousListening() {
+        if (!this.recognition) {
+            this.addChatMessage('AI Assistant', 'Speech recognition not supported in this browser', 'assistant');
+            return;
+        }
+        
+        try {
+            this.continuousMode = true;
+            this.recognition.start();
+            this.updateVoiceButton(true);
+            this.updateListeningStatus(true);
+        } catch (error) {
+            console.error('Error starting speech recognition:', error);
+        }
+    }
+
+    stopContinuousListening() {
+        this.continuousMode = false;
+        if (this.recognition && this.isListening) {
+            this.recognition.stop();
+        }
+        this.updateVoiceButton(false);
+        this.updateListeningStatus(false);
+    }
+
+    processFinalTranscript(transcript) {
+        if (!transcript.trim()) return;
+        
+        this.addChatMessage('You', transcript, 'user');
+        this.sendVoiceInput(transcript);
+        this.updateInterimTranscript('');
+    }
+
+    updateInterimTranscript(transcript) {
+        const interimDisplay = document.getElementById('interimTranscript');
+        if (interimDisplay) {
+            interimDisplay.textContent = transcript;
+            interimDisplay.style.display = transcript ? 'block' : 'none';
+        }
+    }
+
+    updateListeningStatus(isListening) {
+        const statusIndicator = document.getElementById('listeningStatus');
+        if (statusIndicator) {
+            statusIndicator.textContent = isListening ? '🎤 Listening...' : '🔇 Not listening';
+            statusIndicator.className = isListening ? 'listening' : 'not-listening';
+        }
+    }
+
+    updateVoiceButton(isActive) {
+        const voiceBtn = document.getElementById('voiceBtn');
+        const btnText = voiceBtn.querySelector('.btn-text');
+        const icon = voiceBtn.querySelector('.mic-icon');
+        
+        if (isActive) {
+            voiceBtn.classList.add('active');
+            btnText.textContent = 'Stop Listening';
+            icon.textContent = '🔇';
+        } else {
+            voiceBtn.classList.remove('active');
+            btnText.textContent = 'Start Listening';
+            icon.textContent = '🎤';
+        }
+    }
+
+    sendVoiceInput(transcript) {
+        if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+            this.addChatMessage('AI Assistant', 'Not connected to backend', 'assistant');
+            return;
+        }
+
+        const message = {
+            type: 'voice_input',
+            text: transcript,
+            timestamp: new Date().toISOString()
+        };
+
+        this.ws.send(JSON.stringify(message));
     }
 
     connectWebSocket() {
@@ -65,9 +208,7 @@ class ShopEATApp {
             this.ws = new WebSocket(wsUrl);
             
             this.ws.onopen = () => {
-                console.log('WebSocket connected');
                 this.updateConnectionStatus('connected');
-                this.addChatMessage('System', 'Connected to ShopEAT backend!', 'assistant');
             };
 
             this.ws.onmessage = (event) => {
@@ -75,21 +216,15 @@ class ShopEATApp {
             };
 
             this.ws.onclose = () => {
-                console.log('WebSocket disconnected');
                 this.updateConnectionStatus('disconnected');
-                this.addChatMessage('System', 'Connection lost. Trying to reconnect...', 'assistant');
-                
-                // Attempt to reconnect after 3 seconds
                 setTimeout(() => this.connectWebSocket(), 3000);
             };
 
             this.ws.onerror = (error) => {
-                console.error('WebSocket error:', error);
                 this.updateConnectionStatus('disconnected');
             };
 
         } catch (error) {
-            console.error('Failed to connect WebSocket:', error);
             this.updateConnectionStatus('disconnected');
         }
     }
@@ -112,97 +247,9 @@ class ShopEATApp {
         }
     }
 
-    async startRecording() {
-        if (this.isRecording) return;
-        
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            this.mediaRecorder = new MediaRecorder(stream);
-            this.audioChunks = [];
-            
-            this.mediaRecorder.ondataavailable = (event) => {
-                this.audioChunks.push(event.data);
-            };
-
-            this.mediaRecorder.onstop = () => {
-                this.processAudioRecording();
-            };
-
-            this.mediaRecorder.start();
-            this.isRecording = true;
-            this.updateVoiceButton(true);
-            this.updateVoiceFeedback('Recording...', true);
-            
-        } catch (error) {
-            console.error('Error accessing microphone:', error);
-            this.addChatMessage('System', 'Error: Could not access microphone. Please check permissions.', 'assistant');
-        }
-    }
-
-    stopRecording() {
-        if (!this.isRecording || !this.mediaRecorder) return;
-        
-        this.mediaRecorder.stop();
-        this.isRecording = false;
-        this.updateVoiceButton(false);
-        this.updateVoiceFeedback('Processing...', false);
-        
-        // Stop all audio tracks
-        this.mediaRecorder.stream.getTracks().forEach(track => track.stop());
-    }
-
-    async processAudioRecording() {
-        if (this.audioChunks.length === 0) return;
-        
-        try {
-            const audioBlob = new Blob(this.audioChunks, { type: 'audio/wav' });
-            const base64Audio = await this.blobToBase64(audioBlob);
-            
-            // Send voice input to backend
-            this.sendVoiceInput(base64Audio);
-            
-            // Simulate user message in chat
-            this.addChatMessage('You', '🎤 Voice input recorded', 'user');
-            
-        } catch (error) {
-            console.error('Error processing audio:', error);
-            this.addChatMessage('System', 'Error processing voice input', 'assistant');
-        }
-        
-        this.updateVoiceFeedback('Ready to help you shop!', false);
-    }
-
-    blobToBase64(blob) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => {
-                const base64 = reader.result.split(',')[1];
-                resolve(base64);
-            };
-            reader.onerror = reject;
-            reader.readAsDataURL(blob);
-        });
-    }
-
-    sendVoiceInput(audioData) {
-        if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-            this.addChatMessage('System', 'Not connected to backend', 'assistant');
-            return;
-        }
-
-        const message = {
-            type: 'voice_input',
-            audio_data: audioData,
-            timestamp: new Date().toISOString()
-        };
-
-        this.ws.send(JSON.stringify(message));
-    }
-
     handleWebSocketMessage(data) {
         try {
             const message = JSON.parse(data);
-            console.log('Received message:', message);
 
             switch (message.type) {
                 case 'voice_response':
@@ -215,13 +262,8 @@ class ShopEATApp {
                     this.updateShoppingList(message.items);
                     break;
                 case 'error':
-                    this.addChatMessage('System', `Error: ${message.message}`, 'assistant');
+                    this.addChatMessage('AI Assistant', `Error: ${message.message}`, 'assistant');
                     break;
-                case 'echo':
-                    console.log('Echo response:', message.data);
-                    break;
-                default:
-                    console.log('Unknown message type:', message.type);
             }
         } catch (error) {
             console.error('Error parsing WebSocket message:', error);
@@ -230,19 +272,50 @@ class ShopEATApp {
 
     handleVoiceResponse(message) {
         this.addChatMessage('AI Assistant', message.ai_response, 'assistant');
+        this.speakResponse(message.ai_response);
+    }
+
+    speakResponse(text) {
+        if (!this.synthesis) return;
         
-        // Update feedback
-        this.updateVoiceFeedback('Ready to help you shop!', false);
+        try {
+            // Stop any current speech
+            this.synthesis.cancel();
+            
+            // Create speech utterance
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 0.9;
+            utterance.pitch = 1.0;
+            utterance.volume = 1.0;
+            
+            // Set voice
+            const voices = this.synthesis.getVoices();
+            if (voices.length > 0) {
+                // Prefer English voices
+                const englishVoice = voices.find(voice => 
+                    voice.lang.startsWith('en')
+                ) || voices[0];
+                utterance.voice = englishVoice;
+            }
+            
+            // Speak the response
+            this.synthesis.speak(utterance);
+            
+        } catch (error) {
+            console.error('Error speaking response:', error);
+        }
     }
 
     handleShoppingUpdate(message) {
         switch (message.action) {
             case 'item_added':
-                this.addChatMessage('System', `Added: ${message.item.name}`, 'assistant');
+                this.addChatMessage('AI Assistant', `Added: ${message.item.name}`, 'assistant');
+                this.speakResponse(`Added ${message.item.name} to your shopping list`);
                 this.loadShoppingList();
                 break;
             case 'list_cleared':
-                this.addChatMessage('System', 'Shopping list cleared', 'assistant');
+                this.addChatMessage('AI Assistant', 'Shopping list cleared', 'assistant');
+                this.speakResponse('Your shopping list has been cleared');
                 this.updateShoppingList([]);
                 break;
         }
@@ -263,32 +336,6 @@ class ShopEATApp {
         chatContainer.scrollTop = chatContainer.scrollHeight;
     }
 
-    updateVoiceButton(recording) {
-        const voiceBtn = document.getElementById('voiceBtn');
-        const btnText = voiceBtn.querySelector('.btn-text');
-        
-        if (recording) {
-            voiceBtn.classList.add('recording');
-            btnText.textContent = 'Recording...';
-        } else {
-            voiceBtn.classList.remove('recording');
-            btnText.textContent = 'Hold to Speak';
-        }
-    }
-
-    updateVoiceFeedback(text, isRecording) {
-        const feedbackText = document.querySelector('.feedback-text');
-        const waveform = document.getElementById('waveform');
-        
-        feedbackText.textContent = text;
-        
-        if (isRecording) {
-            waveform.style.background = 'linear-gradient(90deg, #ef4444 0%, #dc2626 100%)';
-        } else {
-            waveform.style.background = 'linear-gradient(90deg, #e5e7eb 0%, #d1d5db 100%)';
-        }
-    }
-
     async loadShoppingList() {
         try {
             const response = await fetch('http://localhost:8000/api/shopping-list');
@@ -298,7 +345,6 @@ class ShopEATApp {
             }
         } catch (error) {
             console.error('Error loading shopping list:', error);
-            this.addChatMessage('System', 'Could not load shopping list', 'assistant');
         }
     }
 
@@ -309,7 +355,7 @@ class ShopEATApp {
         if (items.length === 0) {
             shoppingListContainer.innerHTML = `
                 <div class="empty-state">
-                    <p>🎯 Start by saying what you need to buy!</p>
+                    <p>🎯 Start by speaking naturally!</p>
                     <p>Try: "I need milk and bread"</p>
                 </div>
             `;
@@ -333,7 +379,7 @@ class ShopEATApp {
 
     async clearShoppingList() {
         if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-            this.addChatMessage('System', 'Not connected to backend', 'assistant');
+            this.addChatMessage('AI Assistant', 'Not connected to backend', 'assistant');
             return;
         }
 
@@ -346,27 +392,17 @@ class ShopEATApp {
     }
 
     removeShoppingItem(itemName) {
-        // For PoC, we'll just remove from local list
-        // In production, this would send a message to the backend
         this.shoppingList = this.shoppingList.filter(item => item.name !== itemName);
         this.updateShoppingList(this.shoppingList);
-        this.addChatMessage('System', `Removed: ${itemName}`, 'assistant');
+        this.addChatMessage('AI Assistant', `Removed: ${itemName}`, 'assistant');
+        this.speakResponse(`Removed ${itemName} from your shopping list`);
     }
 
     testConnection() {
         if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-            this.addChatMessage('System', '✅ WebSocket connection is working!', 'assistant');
+            this.addChatMessage('AI Assistant', '✅ WebSocket connection is working!', 'assistant');
         } else {
-            this.addChatMessage('System', '❌ WebSocket connection is not working', 'assistant');
-        }
-    }
-
-    showLoading(show) {
-        const loadingOverlay = document.getElementById('loadingOverlay');
-        if (show) {
-            loadingOverlay.classList.add('show');
-        } else {
-            loadingOverlay.classList.remove('show');
+            this.addChatMessage('AI Assistant', '❌ WebSocket connection is not working', 'assistant');
         }
     }
 }
@@ -376,14 +412,9 @@ document.addEventListener('DOMContentLoaded', () => {
     window.app = new ShopEATApp();
 });
 
-// Handle page visibility changes to manage WebSocket connection
+// Handle page visibility changes
 document.addEventListener('visibilitychange', () => {
-    if (document.hidden && window.app && window.app.ws) {
-        // Page is hidden, could close WebSocket to save resources
-        console.log('Page hidden');
-    } else if (!document.hidden && window.app && (!window.app.ws || window.app.ws.readyState !== WebSocket.OPEN)) {
-        // Page is visible and WebSocket is not connected, try to reconnect
-        console.log('Page visible, attempting to reconnect');
+    if (!document.hidden && window.app && (!window.app.ws || window.app.ws.readyState !== WebSocket.OPEN)) {
         window.app.connectWebSocket();
     }
 });

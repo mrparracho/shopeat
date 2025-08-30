@@ -27,6 +27,8 @@ env/
 ENV/
 env.bak/
 venv.bak/
+.venv/           # UV virtual environment
+.uv/             # UV cache and state
 
 # Environment variables
 .env
@@ -34,6 +36,10 @@ venv.bak/
 .env.development.local
 .env.test.local
 .env.production.local
+
+# UV specific
+.uv/
+uv.lock
 
 # Node.js
 node_modules/
@@ -176,3 +182,7 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# UV specific patterns
+.uv/
+uv.lock

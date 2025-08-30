@@ -1,17 +1,20 @@
 #!/usr/bin/env python3
 """
 ShopEAT Backend - FastAPI server with OpenAI Agent SDK integration
+Speech-to-Speech voice shopping assistant
 """
 
 import os
 import json
 import logging
+import base64
+import io
 from typing import Dict, Any
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
-import openai
+from openai import OpenAI
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -24,7 +27,7 @@ logger = logging.getLogger(__name__)
 # Initialize FastAPI app
 app = FastAPI(
     title="ShopEAT Backend",
-    description="Real-time voice shopping assistant backend",
+    description="Real-time speech-to-speech shopping assistant backend",
     version="1.0.0"
 )
 
@@ -38,9 +41,12 @@ app.add_middleware(
 )
 
 # OpenAI client
-openai.api_key = os.getenv("OPENAI_API_KEY")
-if not openai.api_key:
+openai_api_key = os.getenv("OPENAI_API_KEY")
+if not openai_api_key:
     logger.warning("OPENAI_API_KEY not found in environment variables")
+    client = None
+else:
+    client = OpenAI(api_key=openai_api_key)
 
 # WebSocket connection manager
 class ConnectionManager:
@@ -84,14 +90,14 @@ user_sessions: Dict[str, Any] = {}
 @app.get("/")
 async def root():
     """Health check endpoint"""
-    return {"message": "ShopEAT Backend is running!", "status": "healthy"}
+    return {"message": "ShopEAT Speech-to-Speech Backend is running!", "status": "healthy"}
 
 @app.get("/health")
 async def health_check():
     """Detailed health check"""
     return {
         "status": "healthy",
-        "openai_configured": bool(openai.api_key),
+        "openai_configured": bool(openai_api_key),
         "active_connections": len(manager.active_connections),
         "shopping_items": len(shopping_list)
     }
@@ -136,12 +142,12 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
         manager.disconnect(websocket)
 
 async def process_voice_input(message: Dict[str, Any], client_id: str) -> Dict[str, Any]:
-    """Process voice input using OpenAI"""
+    """Process voice input using OpenAI - Speech to Speech"""
     try:
-        if not openai.api_key:
+        if not client:
             return {
                 "type": "error",
-                "message": "OpenAI API not configured"
+                "message": "OpenAI API not configured. Please set OPENAI_API_KEY in your .env file"
             }
         
         # Extract audio data and convert to text (simplified for PoC)
@@ -150,17 +156,21 @@ async def process_voice_input(message: Dict[str, Any], client_id: str) -> Dict[s
         
         # For PoC, we'll simulate voice processing
         # In production, this would be:
-        # response = openai.Audio.transcribe("whisper-1", audio_file)
+        # response = client.audio.transcriptions.create(model="whisper-1", file=audio_file)
         
         simulated_text = "I need to buy milk and bread"
         
         # Process with OpenAI for shopping assistance
         ai_response = await get_shopping_assistance(simulated_text, client_id)
         
+        # Convert AI response to speech
+        speech_audio = await text_to_speech(ai_response)
+        
         return {
             "type": "voice_response",
             "transcribed_text": simulated_text,
             "ai_response": ai_response,
+            "speech_audio": speech_audio,  # Base64 encoded audio
             "timestamp": message.get("timestamp")
         }
         
@@ -182,7 +192,7 @@ async def get_shopping_assistance(text: str, client_id: str) -> str:
         If they mentioned items, suggest quantities and any related items they might need.
         """
         
-        response = openai.ChatCompletion.create(
+        response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": "You are a helpful shopping assistant."},
@@ -197,6 +207,29 @@ async def get_shopping_assistance(text: str, client_id: str) -> str:
         logger.error(f"OpenAI API error: {e}")
         return "I'm having trouble connecting to my AI assistant right now. Please try again."
 
+async def text_to_speech(text: str) -> str:
+    """Convert text to speech using OpenAI TTS"""
+    try:
+        if not client:
+            return ""
+        
+        # Use OpenAI's TTS API
+        response = client.audio.speech.create(
+            model="tts-1",
+            voice="alloy",  # Options: alloy, echo, fable, onyx, nova, shimmer
+            input=text
+        )
+        
+        # Convert the audio to base64 for transmission
+        audio_bytes = response.content
+        audio_base64 = base64.b64encode(audio_bytes).decode('utf-8')
+        
+        return audio_base64
+        
+    except Exception as e:
+        logger.error(f"TTS error: {e}")
+        return ""
+
 async def process_shopping_action(message: Dict[str, Any], client_id: str) -> Dict[str, Any]:
     """Process shopping-related actions"""
     action = message.get("action")
@@ -205,11 +238,18 @@ async def process_shopping_action(message: Dict[str, Any], client_id: str) -> Di
         item_data = message.get("item", {})
         item = ShoppingItem(**item_data)
         shopping_list.append(item)
+        
+        # Create voice confirmation
+        confirmation_text = f"Added {item.name} to your shopping list"
+        speech_audio = await text_to_speech(confirmation_text)
+        
         return {
             "type": "shopping_update",
             "action": "item_added",
             "item": item.dict(),
-            "total_items": len(shopping_list)
+            "total_items": len(shopping_list),
+            "speech_audio": speech_audio,
+            "message": confirmation_text
         }
     
     elif action == "get_list":
@@ -221,10 +261,17 @@ async def process_shopping_action(message: Dict[str, Any], client_id: str) -> Di
     
     elif action == "clear_list":
         shopping_list.clear()
+        
+        # Create voice confirmation
+        confirmation_text = "Your shopping list has been cleared"
+        speech_audio = await text_to_speech(confirmation_text)
+        
         return {
             "type": "shopping_update",
             "action": "list_cleared",
-            "total_items": 0
+            "total_items": 0,
+            "speech_audio": speech_audio,
+            "message": confirmation_text
         }
     
     else:
