@@ -18,7 +18,7 @@ A real-time voice shopping assistant that leverages OpenAI Agent SDK for intelli
 │                 │    │                 │    │                 │
 │ • Voice UI      │    │ • FastAPI       │    │ • GPT Models    │
 │ • Real-time     │    │ • WebSocket     │    │ • Function      │
-│ • Shopping      │    │ • Voice Proc    │    │   Calling      │
+│ • Shopping      │    │ • Voice Proc    │    │   Calling       │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
