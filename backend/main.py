@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-ShopEAT Backend - FastAPI server with OpenAI Agent SDK integration
-Speech-to-Speech voice shopping assistant
+ShopEAT Backend - FastAPI server with OpenAI Agents SDK RealtimeAgent integration
+Real-time speech-to-speech voice shopping assistant
 """
 
 import os
@@ -9,13 +9,16 @@ import json
 import logging
 import base64
 import io
-from typing import Dict, Any
+import asyncio
+from typing import Dict, Any, List
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from openai import OpenAI
+from agents.realtime import RealtimeAgent, RealtimeRunner
 from dotenv import load_dotenv
+from openai.realtime.models import OpenAIRealtimeWebSocketModel
 
 # Load environment variables
 load_dotenv()
@@ -27,7 +30,7 @@ logger = logging.getLogger(__name__)
 # Initialize FastAPI app
 app = FastAPI(
     title="ShopEAT Backend",
-    description="Real-time speech-to-speech shopping assistant backend",
+    description="Real-time speech-to-speech shopping assistant with OpenAI Agents SDK",
     version="1.0.0"
 )
 
@@ -52,6 +55,7 @@ else:
 class ConnectionManager:
     def __init__(self):
         self.active_connections: list[WebSocket] = []
+        self.agent_runners: Dict[str, RealtimeRunner] = {}
 
     async def connect(self, websocket: WebSocket):
         await websocket.accept()
@@ -69,6 +73,40 @@ class ConnectionManager:
         for connection in self.active_connections:
             await connection.send_text(message)
 
+    def get_agent_runner(self, client_id: str) -> RealtimeRunner:
+        """Get or create a RealtimeRunner for a client"""
+        if client_id not in self.agent_runners:
+            # Create shopping assistant agent
+            shopping_agent = RealtimeAgent(
+                name="Shopping Assistant",
+                instructions="""You are a helpful, conversational shopping assistant. Your role is to:
+                1. Help users build their shopping list through natural conversation
+                2. Provide helpful shopping recommendations
+                3. Keep responses natural, brief, and focused on shopping
+                4. Ask follow-up questions to understand what else they need
+                5. Be friendly and encouraging
+                
+                When users mention items, acknowledge that you're adding them and ask what else they need.
+                Keep the conversation flowing naturally."""
+            )
+            
+            # Create the runner with the agent
+            runner = RealtimeRunner(
+                starting_agent=shopping_agent,
+                model=OpenAIRealtimeWebSocketModel()
+            )
+            
+            self.agent_runners[client_id] = runner
+            logger.info(f"Created new RealtimeRunner for client {client_id}")
+        
+        return self.agent_runners[client_id]
+
+    def remove_agent_runner(self, client_id: str):
+        """Remove a client's agent runner when they disconnect"""
+        if client_id in self.agent_runners:
+            del self.agent_runners[client_id]
+            logger.info(f"Removed RealtimeRunner for client {client_id}")
+
 manager = ConnectionManager()
 
 # Data models
@@ -79,18 +117,18 @@ class ShoppingItem(BaseModel):
     notes: str = ""
 
 class VoiceMessage(BaseModel):
-    audio_data: str  # Base64 encoded audio
+    text: str
     user_id: str
     session_id: str
 
 # In-memory storage for PoC
-shopping_list: list[ShoppingItem] = []
+shopping_list: List[ShoppingItem] = []
 user_sessions: Dict[str, Any] = {}
 
 @app.get("/")
 async def root():
     """Health check endpoint"""
-    return {"message": "ShopEAT Speech-to-Speech Backend is running!", "status": "healthy"}
+    return {"message": "ShopEAT RealtimeAgent Backend is running!", "status": "healthy"}
 
 @app.get("/health")
 async def health_check():
@@ -98,14 +136,17 @@ async def health_check():
     return {
         "status": "healthy",
         "openai_configured": bool(openai_api_key),
+        "openai_agents_available": "agents.realtime" in str(type(manager)),
         "active_connections": len(manager.active_connections),
+        "active_runners": len(manager.agent_runners),
         "shopping_items": len(shopping_list)
     }
 
 @app.websocket("/ws/{client_id}")
 async def websocket_endpoint(websocket: WebSocket, client_id: str):
-    """WebSocket endpoint for real-time voice communication"""
+    """WebSocket endpoint for real-time voice communication with RealtimeAgent"""
     await manager.connect(websocket)
+    
     try:
         while True:
             # Receive message from client
@@ -116,8 +157,8 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
             
             # Process message based on type
             if message.get("type") == "voice_input":
-                # Handle voice input
-                response = await process_voice_input(message, client_id)
+                # Handle voice input with RealtimeAgent
+                response = await process_voice_input_with_agent(message, client_id)
                 await manager.send_personal_message(
                     json.dumps(response), websocket
                 )
@@ -137,75 +178,121 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
                 
     except WebSocketDisconnect:
         manager.disconnect(websocket)
+        manager.remove_agent_runner(client_id)
     except Exception as e:
         logger.error(f"WebSocket error: {e}")
         manager.disconnect(websocket)
+        manager.remove_agent_runner(client_id)
 
-async def process_voice_input(message: Dict[str, Any], client_id: str) -> Dict[str, Any]:
-    """Process voice input using OpenAI - Speech to Speech"""
+async def process_voice_input_with_agent(message: Dict[str, Any], client_id: str) -> Dict[str, Any]:
+    """Process voice input using OpenAI Agents SDK RealtimeAgent"""
     try:
-        if not client:
+        if not openai_api_key:
             return {
                 "type": "error",
                 "message": "OpenAI API not configured. Please set OPENAI_API_KEY in your .env file"
             }
         
-        # Extract audio data and convert to text (simplified for PoC)
-        # In production, you'd use OpenAI's Whisper API here
-        audio_data = message.get("audio_data", "")
+        # Extract text from the message
+        user_text = message.get("text", "")
         
-        # For PoC, we'll simulate voice processing
-        # In production, this would be:
-        # response = client.audio.transcriptions.create(model="whisper-1", file=audio_file)
+        if not user_text:
+            return {
+                "type": "error",
+                "message": "No text received from frontend"
+            }
         
-        simulated_text = "I need to buy milk and bread"
+        logger.info(f"Processing user input with RealtimeAgent: {user_text}")
         
-        # Process with OpenAI for shopping assistance
-        ai_response = await get_shopping_assistance(simulated_text, client_id)
+        # Get the client's RealtimeRunner
+        runner = manager.get_agent_runner(client_id)
         
-        # Convert AI response to speech
-        speech_audio = await text_to_speech(ai_response)
+        # Start a session and send the user input
+        async with await runner.run() as session:
+            # Send the user message to the session
+            await session.send_message(user_text)
+            
+            # Process the agent's response
+            async for event in session:
+                if event.type == "agent_message":
+                    # Extract the agent's response
+                    ai_response = event.content
+                    logger.info(f"RealtimeAgent response: {ai_response}")
+                    
+                    # Process shopping items mentioned in user text
+                    await process_shopping_from_response(user_text, ai_response)
+                    
+                    # Convert AI response to speech
+                    speech_audio = await text_to_speech(ai_response)
+                    
+                    return {
+                        "type": "voice_response",
+                        "transcribed_text": user_text,
+                        "ai_response": ai_response,
+                        "speech_audio": speech_audio,
+                        "timestamp": message.get("timestamp")
+                    }
         
+        # Fallback if no agent message received
         return {
-            "type": "voice_response",
-            "transcribed_text": simulated_text,
-            "ai_response": ai_response,
-            "speech_audio": speech_audio,  # Base64 encoded audio
-            "timestamp": message.get("timestamp")
+            "type": "error",
+            "message": "No response received from RealtimeAgent"
         }
         
     except Exception as e:
-        logger.error(f"Error processing voice input: {e}")
+        logger.error(f"Error processing voice input with RealtimeAgent: {e}")
         return {
             "type": "error",
             "message": f"Error processing voice input: {str(e)}"
         }
 
-async def get_shopping_assistance(text: str, client_id: str) -> str:
-    """Get shopping assistance from OpenAI"""
+async def process_shopping_from_response(user_text: str, ai_response: str):
+    """Process shopping items mentioned in user text and add them to the list"""
     try:
-        # Create a simple prompt for shopping assistance
-        prompt = f"""
-        You are a helpful shopping assistant. The user said: "{text}"
+        # Simple item detection (in production, you'd use more sophisticated NLP)
+        user_text_lower = user_text.lower()
         
-        Please provide helpful shopping guidance. Keep it brief and practical.
-        If they mentioned items, suggest quantities and any related items they might need.
-        """
+        # Common shopping items
+        items_to_add = []
         
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "You are a helpful shopping assistant."},
-                {"role": "user", "content": prompt}
-            ],
-            max_tokens=150
-        )
+        if 'milk' in user_text_lower:
+            items_to_add.append(('milk', 1, 'dairy'))
+        if 'bread' in user_text_lower:
+            items_to_add.append(('bread', 1, 'bakery'))
+        if 'eggs' in user_text_lower:
+            items_to_add.append(('eggs', 1, 'dairy'))
+        if 'cheese' in user_text_lower:
+            items_to_add.append(('cheese', 1, 'dairy'))
+        if 'butter' in user_text_lower:
+            items_to_add.append(('butter', 1, 'dairy'))
+        if 'banana' in user_text_lower or 'bananas' in user_text_lower:
+            items_to_add.append(('bananas', 1, 'produce'))
+        if 'apple' in user_text_lower or 'apples' in user_text_lower:
+            items_to_add.append(('apples', 1, 'produce'))
+        if 'chicken' in user_text_lower:
+            items_to_add.append(('chicken', 1, 'meat'))
+        if 'beef' in user_text_lower:
+            items_to_add.append(('beef', 1, 'meat'))
+        if 'rice' in user_text_lower:
+            items_to_add.append(('rice', 1, 'pantry'))
+        if 'pasta' in user_text_lower:
+            items_to_add.append(('pasta', 1, 'pantry'))
         
-        return response.choices[0].message.content
+        # Add detected items to shopping list
+        for name, quantity, category in items_to_add:
+            # Check if item already exists
+            existing_item = next((item for item in shopping_list if item.name.lower() == name.lower()), None)
+            if not existing_item:
+                new_item = ShoppingItem(name=name, quantity=quantity, category=category)
+                shopping_list.append(new_item)
+                logger.info(f"Added {name} to shopping list")
         
+        # Update the shopping list in the response
+        if items_to_add:
+            logger.info(f"Added {len(items_to_add)} items to shopping list")
+            
     except Exception as e:
-        logger.error(f"OpenAI API error: {e}")
-        return "I'm having trouble connecting to my AI assistant right now. Please try again."
+        logger.error(f"Error processing shopping items: {e}")
 
 async def text_to_speech(text: str) -> str:
     """Convert text to speech using OpenAI TTS"""
